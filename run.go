@@ -4,15 +4,17 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 
 	"golang.org/x/sync/errgroup"
 )
 
-func run(ctx context.Context) error {
+func run(ctx context.Context, l net.Listener) error {
 	// HTTPサーバーの定義
 	s := &http.Server{
-		Addr: ":18080",
+		// 引数で受け取ったnet.listenerを利用するので
+		// addrフィールドは指定しない
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "hello, %s", r.URL.Path[1:])
 		}),
@@ -31,8 +33,11 @@ func run(ctx context.Context) error {
 	// メイン処理をブロックしないため
 
 	eg.Go(func() error {
+		// ポート表示
+		log.Printf("listning:%v", l.Addr().String())
 
-		err := s.ListenAndServe()
+		// addrフィールドを外から決めるため、serveに変更
+		err := s.Serve(l)
 		if err != nil {
 
 			// http.ErrServerCloseは
