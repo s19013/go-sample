@@ -1,0 +1,13 @@
+name: go-sample
+services:
+  api:
+    build:
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - "8080:8080"
+    tty: true
+    stdin_open: true
+    restart: unless-stopped
+    volumes:
+      - ./app:/app
