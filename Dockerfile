@@ -32,5 +32,8 @@ CMD [ "./app" ]
 FROM golang:1.24 as dev
 WORKDIR /app
 
-RUN go install github.com/air-verse/air@latest
+# RUN go install github.com/air-verse/air@lates
+
+# 今 goのバージョンが1.24なのでそれに対応したairを使う
+RUN go install github.com/air-verse/air@v1.60
 CMD [ "air" ]
