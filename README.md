@@ -7,3 +7,7 @@ https://github.com/budougumi0617/go_todo_app
 
 ## makefile類
 サンプルではmakefileだがmiseに変換した
+
+## .golangci
+バージョンが変わって書き方が大きく変わったり値がなくなったりした。
+claude codeにまかせて修正してもらった。
