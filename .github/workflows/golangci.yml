@@ -20,7 +20,7 @@ jobs:
           # 全部に対して実行
           golangci_lint_flags: "--config=./.golangci.yaml ./..."
           # lintエラーがあるとマージできない
-          fail_on_error: true
+          fail_level: error
           # lint結果をPRレビューコメントとして投稿
           reporter: "github-pr-review"
 
