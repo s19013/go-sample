@@ -1,0 +1,40 @@
+# mainブランチに pushされたとき
+# Pull Requestが作成・更新されたとき
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+name: test
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Goをインストール
+      # 1.18以上のGoを使う
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ">=1.18"
+      # GitHub Actionsの仮想マシンに
+      # このリポジトリのコードをcloneする
+      - uses: actions/checkout@v3
+      # 全パッケージのテスト実行
+      # コードカバレッジを計測してファイルに保存
+      - run: go test ./... -coverprofile=coverage.out
+      # octocov というツールでカバレッジをレポート
+      - name: report coverage
+        uses: k1LoW/octocov-action@v0
+
+# PR or main push
+#         ↓
+# Ubuntu環境起動
+#         ↓
+# Go >=1.18 インストール
+#         ↓
+# リポジトリ checkout
+#         ↓
+# go test ./...
+#         ↓
+# coverage.out生成
+#         ↓
+# octocovでカバレッジレポート

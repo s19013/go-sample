@@ -1,0 +1,23 @@
+version: "2"
+
+linters:
+  disable-all: true
+  enable:
+    - unused
+    - errcheck
+    - gocognit
+    - gocyclo
+    - govet
+    - misspell
+    - staticcheck
+    - whitespace
+  settings:
+    gocyclo:
+      min-complexity: 30
+    misspell:
+      locale: US
+
+formatters:
+  enable:
+    - goimports
+    - gofmt
