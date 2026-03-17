@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/s19013/go-sample/config"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -30,7 +31,18 @@ func main() {
 	}
 }
 
-func run(ctx context.Context, l net.Listener) error {
+func run(ctx context.Context) error {
+	cfg, err := config.New()
+	if err != nil {
+		return err
+	}
+	l, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
+	if err != nil {
+		log.Fatalf("failed to listen port %d: %v", cfg.Port, err)
+	}
+	url := fmt.Sprintf("http://%s", l.Addr().String())
+	log.Printf("start with: %v", url)
+
 	// HTTPサーバーの定義
 	s := &http.Server{
 		// 引数で受け取ったnet.listenerを利用するので
