@@ -1,0 +1,40 @@
+name: golang-ci
+on:
+  pull_request:
+    paths:
+      - "**.go"
+      - .github/workflows/golangci.yml
+jobs:
+  golangci-lint:
+    name: golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+      # reviewdog integration付きでgolangci-lint を実行
+      - name: golangci-lint
+        uses: reviewdog/action-golangci-lint@v2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # .golangci.ymlのルールに従い
+          # 全部に対して実行
+          golangci_lint_flags: "--config=./.golangci.yml ./..."
+          # lintエラーがあるとマージできない
+          fail_on_error: true
+          # lint結果をPRレビューコメントとして投稿
+          reporter: "github-pr-review"
+
+# PR作成
+#    ↓
+# GitHub Actions 起動
+#    ↓
+# checkout
+#    ↓
+# golangci-lint
+#    │
+#    ├─ OK → CI成功
+#    │
+#    └─ NG
+#       ↓
+#    PRにコメント
+#    CI失敗
