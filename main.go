@@ -83,7 +83,7 @@ func run(ctx context.Context) error {
 	<-ctx.Done()
 
 	// HTTPサーバーを安全に停止させる
-	err := s.Shutdown(context.Background())
+	err = s.Shutdown(context.Background())
 
 	if err != nil {
 		log.Printf("failed to terminate server: %v", err)
