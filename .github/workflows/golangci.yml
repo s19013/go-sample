@@ -18,7 +18,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           # .golangci.ymlのルールに従い
           # 全部に対して実行
-          golangci_lint_flags: "--config=./.golangci.yml ./..."
+          golangci_lint_flags: "--config=./.golangci.yaml ./..."
           # lintエラーがあるとマージできない
           fail_on_error: true
           # lint結果をPRレビューコメントとして投稿
