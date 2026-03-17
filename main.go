@@ -37,7 +37,7 @@ func run(ctx context.Context) error {
 		// 引数で受け取ったnet.listenerを利用するので
 		// addrフィールドは指定しない
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprintf(w, "hello, %s", r.URL.Path[1:])
+			_, _ = fmt.Fprintf(w, "hello, %s", r.URL.Path[1:])
 		}),
 	}
 
@@ -60,7 +60,6 @@ func run(ctx context.Context) error {
 		// addrフィールドを外から決めるため、serveに変更
 		err := s.Serve(l)
 		if err != nil {
-
 			// http.ErrServerCloseは
 			// http.Server.ShutDown()が正常に終了したことを示すので何もしない
 			if err == http.ErrServerClosed {
