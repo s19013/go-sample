@@ -24,7 +24,7 @@ func TestServerRun(t *testing.T) {
 	// 別ゴルーチンでテスト対象の｢run｣を実行してHttpサーバーを起動
 	eg, ctx := errgroup.WithContext(ctx)
 	mux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello,%s", r.URL.Path[1:])
+		fmt.Fprintf(w, "Hello, %s", r.URL.Path[1:])
 	})
 
 	eg.Go(func() error {
@@ -47,7 +47,7 @@ func TestServerRun(t *testing.T) {
 	}
 
 	// httpサーバーの戻り値を検証する
-	want := fmt.Sprintf("hello, %s", in)
+	want := fmt.Sprintf("Hello, %s", in)
 	if string(got) != want {
 		t.Errorf("want %q,but got %q", want, got)
 	}
