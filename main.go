@@ -7,6 +7,8 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/s19013/go-sample/config"
 	"golang.org/x/sync/errgroup"
@@ -21,6 +23,10 @@ func main() {
 }
 
 func run(ctx context.Context) error {
+	// Ctrl+C や SIGTERM を受け取ったときに処理を終了できるようにする Context
+	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	cfg, err := config.New()
 	if err != nil {
 		return err
