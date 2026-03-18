@@ -24,7 +24,10 @@ func TestServerRun(t *testing.T) {
 	// 別ゴルーチンでテスト対象の｢run｣を実行してHttpサーバーを起動
 	eg, ctx := errgroup.WithContext(ctx)
 	mux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello, %s", r.URL.Path[1:])
+		_, err := fmt.Fprintf(w, "Hello, %s", r.URL.Path[1:])
+		if err != nil {
+			t.Errorf("failed to write response: %v", err)
+		}
 	})
 
 	eg.Go(func() error {
