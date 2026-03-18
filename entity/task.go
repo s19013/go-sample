@@ -18,4 +18,5 @@ type Task struct {
 	Created time.Time  `json:"created"`
 }
 
+// これは配列ではなくスライス
 type Tasks []*Task
