@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -10,42 +9,18 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/s19013/go-sample/config"
 	"golang.org/x/sync/errgroup"
 )
 
-func main() {
-	err := run(context.Background())
-	if err != nil {
-		log.Printf("failed to terminated server: %v", err)
-		os.Exit(1)
-	}
+type Server struct {
+	srv *http.Server
+	l   net.Listener
 }
 
-func run(ctx context.Context) error {
+func (s *Server) Run(ctx context.Context) error {
 	// Ctrl+C や SIGTERM を受け取ったときに処理を終了できるようにする Context
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
-
-	cfg, err := config.New()
-	if err != nil {
-		return err
-	}
-	l, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
-	if err != nil {
-		log.Fatalf("failed to listen port %d: %v", cfg.Port, err)
-	}
-	url := fmt.Sprintf("http://%s", l.Addr().String())
-	log.Printf("start with: %v", url)
-
-	// HTTPサーバーの定義
-	s := &http.Server{
-		// 引数で受け取ったnet.listenerを利用するので
-		// addrフィールドは指定しない
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			_, _ = fmt.Fprintf(w, "hello, %s", r.URL.Path[1:])
-		}),
-	}
 
 	// errgroup の作成
 	// * goroutineのエラーをまとめて管理する仕組み
@@ -58,13 +33,11 @@ func run(ctx context.Context) error {
 
 	// 別ゴルーチンでhttpサーバーを起動
 	// メイン処理をブロックしないため
-
 	eg.Go(func() error {
 		// ポート表示
-		log.Printf("listning:%v", l.Addr().String())
+		log.Printf("listning:%v", s.l.Addr().String())
 
-		// addrフィールドを外から決めるため、serveに変更
-		err := s.Serve(l)
+		err := s.srv.Serve(s.l)
 		if err != nil {
 			// http.ErrServerCloseは
 			// http.Server.ShutDown()が正常に終了したことを示すので何もしない
@@ -75,7 +48,6 @@ func run(ctx context.Context) error {
 			log.Printf("failed to terminate server: %v", err)
 			return err
 		}
-
 		return nil
 	})
 
@@ -88,12 +60,20 @@ func run(ctx context.Context) error {
 	<-ctx.Done()
 
 	// HTTPサーバーを安全に停止させる
-	err = s.Shutdown(context.Background())
+	err := s.srv.Shutdown(context.Background())
 
 	if err != nil {
 		log.Printf("failed to terminate server: %v", err)
 	}
 
 	// Goメソッドで起動した goroutine 全部が終了するまで待つ
+	// グレースフルシャットダウンの終了を待つ。
 	return eg.Wait()
+}
+
+func NewServer(l net.Listener, mux http.Handler) *Server {
+	return &Server{
+		srv: &http.Server{Handler: mux},
+		l:   l,
+	}
 }

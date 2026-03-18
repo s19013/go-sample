@@ -12,9 +12,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func TestRun(t *testing.T) {
-	t.Skip("リファクタリング中")
-
+func TestServerRun(t *testing.T) {
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		log.Fatalf("failed to listen port  %v", err)
@@ -25,8 +23,16 @@ func TestRun(t *testing.T) {
 
 	// 別ゴルーチンでテスト対象の｢run｣を実行してHttpサーバーを起動
 	eg, ctx := errgroup.WithContext(ctx)
+	mux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := fmt.Fprintf(w, "Hello, %s", r.URL.Path[1:])
+		if err != nil {
+			t.Errorf("failed to write response: %v", err)
+		}
+	})
+
 	eg.Go(func() error {
-		return run(ctx)
+		s := NewServer(l, mux)
+		return s.Run(ctx)
 	})
 
 	// リクエスト送信
@@ -44,7 +50,7 @@ func TestRun(t *testing.T) {
 	}
 
 	// httpサーバーの戻り値を検証する
-	want := fmt.Sprintf("hello, %s", in)
+	want := fmt.Sprintf("Hello, %s", in)
 	if string(got) != want {
 		t.Errorf("want %q,but got %q", want, got)
 	}

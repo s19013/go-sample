@@ -30,4 +30,7 @@ run = "docker compose ps"
 
 [tasks.test]
 description = "Execute tests"
+# -race:データ競合（data race）を検出する
+# -shuffle=on :シャッフルして 順番依存しているバグを見つける
+# ./... : 全テストファイルが対象
 run = "go test -race -shuffle=on ./..."
