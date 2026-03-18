@@ -34,3 +34,7 @@ description = "Execute tests"
 # -shuffle=on :シャッフルして 順番依存しているバグを見つける
 # ./... : 全テストファイルが対象
 run = "go test -race -shuffle=on ./..."
+
+[tasks.dev]
+description = "ローカル開発サーバー"
+run = 'go run .'
