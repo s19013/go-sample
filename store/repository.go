@@ -12,6 +12,7 @@ import (
 	// sql.openで"mysql"を使うため "mysql" が登録されてる必要がある
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
+	"github.com/s19013/go-sample/clock"
 	"github.com/s19013/go-sample/config"
 )
 
