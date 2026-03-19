@@ -55,6 +55,8 @@ type Repository struct {
 	Clocker clock.Clocker
 }
 
+// インターフェイスを使ってモックしやすくしている
+
 // トランザクション
 type Beginner interface {
 	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
