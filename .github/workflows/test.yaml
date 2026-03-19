@@ -29,6 +29,10 @@ jobs:
       # GitHub Actionsの仮想マシンに
       # このリポジトリのコードをcloneする
       - uses: actions/checkout@v3
+      # DBにスキーマを適用する
+      - run: |
+          go install github.com/sqldef/sqldef/cmd/mysqldef@latest
+          mysql -h 127.0.0.1 -u todo -ptodo todo < _tools/mysql/schema.sql
       # 全パッケージのテスト実行
       # コードカバレッジを計測してファイルに保存
       - run: go test ./... -coverprofile=coverage.out
