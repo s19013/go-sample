@@ -9,6 +9,17 @@ name: test
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        options: --health-cmd "mysqladmin ping -h localhost" --health-interval 20s --health-timeout 10s --health-retries 10
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_DATABASE: todo
+          MYSQL_USER: todo
+          MYSQL_PASSWORD: todo
     steps:
       # Goをインストール
       # 1.18以上のGoを使う
@@ -18,6 +29,10 @@ jobs:
       # GitHub Actionsの仮想マシンに
       # このリポジトリのコードをcloneする
       - uses: actions/checkout@v3
+      # DBにスキーマを適用する
+      - run: |
+          go install github.com/sqldef/sqldef/cmd/mysqldef@latest
+          mysql -h 127.0.0.1 -u todo -ptodo todo < _tools/mysql/schema.sql
       # 全パッケージのテスト実行
       # コードカバレッジを計測してファイルに保存
       - run: go test ./... -coverprofile=coverage.out
