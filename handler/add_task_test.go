@@ -42,7 +42,6 @@ func TestAddTask(t *testing.T) {
 	// n → "ok" や "badRequest"（キー）
 	// tt → 各テストケースの中身（struct）
 	for n, tt := range tests {
-
 		// Goの for range はクセがあって
 		// ループ変数は1個しか使い回される
 		// 全部「最後のtt」になる可能性あり（並列だと特に）
