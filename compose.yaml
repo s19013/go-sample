@@ -18,7 +18,7 @@ services:
       - .:/app
     ports:
       - "18000:8080"
-    links:
+    depends_on:
       - todo-db
   todo-db:
     image: mysql:8.0.29
