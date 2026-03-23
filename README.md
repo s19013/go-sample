@@ -13,3 +13,8 @@ https://github.com/budougumi0617/go_todo_app
 claude codeにまかせて修正してもらった。
 
 https://golangci-lint.run/docs/product/migration-guide/
+
+## 変数類について
+t,b とか短すぎる変数などが多いが、これはサンプルでそうかいていたからそうした。
+
+自分でわかりやすい名前に変える方法も考えたが、それでは、参考書と見比べたりするのが難しくなるかもしれないと思い今回は、サンプル通りにした
