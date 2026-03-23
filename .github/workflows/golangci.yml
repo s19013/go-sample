@@ -6,7 +6,6 @@ on:
       - .github/workflows/golangci.yml
 jobs:
   golangci-lint:
-    if: false # リファクタリングが終わるまで一時停止
     name: golangci-lint
     runs-on: ubuntu-latest
     steps:

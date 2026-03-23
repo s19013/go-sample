@@ -2,13 +2,14 @@ package handler
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/s19013/go-sample/entity"
-	"github.com/s19013/go-sample/store"
 	"github.com/s19013/go-sample/testutil"
 )
 
@@ -60,12 +61,26 @@ func TestAddTask(t *testing.T) {
 				bytes.NewReader(testutil.LoadFile(t, tt.reqFile)),
 			)
 
+			// サービスのモック作成
+			moq := &AddTaskServiceMock{}
+
+			// モックを定義
+			moq.AddTaskFunc = func(
+				ctx context.Context, title string,
+			) (*entity.Task, error) {
+				// 成功ケース
+				if tt.want.status == http.StatusOK {
+					return &entity.Task{ID: 1}, nil
+				}
+
+				// 失敗ケース
+				return nil, errors.New("error from mock")
+			}
+
 			// テスト実行
 			// AddTaskを作る
 			sut := AddTask{
-				Store: &store.TaskStore{
-					Tasks: map[entity.TaskID]*entity.Task{},
-				},
+				Service:   moq,
 				Validator: validator.New(),
 			}
 
