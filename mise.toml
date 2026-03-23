@@ -38,3 +38,7 @@ run = "go test -race -shuffle=on ./..."
 [tasks.dev]
 description = "ローカル開発サーバー"
 run = 'go run .'
+
+[tasks.generate]
+description = "モックを生成"
+run = 'go generate ./...'
