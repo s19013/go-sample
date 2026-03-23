@@ -8,7 +8,6 @@ on:
 name: test
 jobs:
   test:
-    if: false # リファクタリングが終わるまで一時停止
     runs-on: ubuntu-latest
     services:
       mysql:
