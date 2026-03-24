@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -14,6 +15,23 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/s19013/go-sample/clock"
 	"github.com/s19013/go-sample/config"
+)
+
+const (
+	// ErrCodeMySQLDuplicateEntry はMySQL系のDUPLICATEエラーコード
+	// https://dev.mysql.com/doc/mysql-errors/8.0/en/server-error-reference.html
+	// Error number: 1062; Symbol: ER_DUP_ENTRY; SQLSTATE: 23000
+
+	// MySQLの重複エラーコード（UNIQUE制約違反）
+	// DBエラー判定に使用する
+	ErrCodeMySQLDuplicateEntry = 1062
+)
+
+var (
+
+	// 重複登録を表すドメインエラー
+	// DB種別に依存しないエラーとして上位層に返す
+	ErrAlreadyEntry = errors.New("duplicate entry")
 )
 
 // DB本体,Close関数（後で使う）,error を返す
