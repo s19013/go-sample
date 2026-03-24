@@ -15,15 +15,11 @@ require (
 	github.com/go-playground/validator/v10 v10.30.1 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
 	github.com/go-sql-driver/mysql v1.9.3 // indirect
-	github.com/goccy/go-json v0.10.3 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
-	github.com/lestrrat-go/jwx v1.2.31 // indirect
-	github.com/lestrrat-go/option v1.0.1 // indirect
 	github.com/matryer/moq v0.5.3 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	golang.org/x/crypto v0.46.0 // indirect
 	golang.org/x/mod v0.30.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
