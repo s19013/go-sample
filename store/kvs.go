@@ -13,7 +13,6 @@ import (
 // KVS ->（Key-Value Store）
 
 func NewKVS(ctx context.Context, cfg *config.Config) (*KVS, error) {
-
 	// 設定（cfg.RedisHost, cfg.RedisPort）からRedisの接続先を作る
 	// Redisクライアントを生成
 	cli := redis.NewClient(&redis.Options{
