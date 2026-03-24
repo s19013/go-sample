@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/s19013/go-sample/entity"
-	"github.com/s19013/go-sample/store"
 )
 
 // リクエストの解釈、レスポンスを組み立てる処理以外をこちらに委譲する
@@ -19,6 +18,6 @@ type AddTaskService interface {
 	AddTask(ctx context.Context, title string) (*entity.Task, error)
 }
 
-type UserRegister interface {
-	RegisterUser(ctx context.Context, db store.Execer, u *entity.User) error
+type RegisterUserService interface {
+	RegisterUser(ctx context.Context, name, password, role string) (*entity.User, error)
 }
