@@ -23,7 +23,6 @@ func (r *Repository) RegisterUser(ctx context.Context, db Execer, u *entity.User
 		var mysqlErr *mysql.MySQLError
 		if errors.As(err, &mysqlErr) &&
 			mysqlErr.Number == ErrCodeMySQLDuplicateEntry {
-
 			// “重複エラー”なら → 独自エラーに変換
 			return fmt.Errorf("cannot create same name user: %w", ErrAlreadyEntry)
 		}
