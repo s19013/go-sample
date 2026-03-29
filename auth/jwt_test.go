@@ -1,0 +1,288 @@
+package auth
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"reflect"
+	"testing"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/lestrrat-go/jwx/v2/jwa"
+	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/lestrrat-go/jwx/v2/jwt"
+	"github.com/s19013/go-sample/clock"
+	"github.com/s19013/go-sample/entity"
+	"github.com/s19013/go-sample/store"
+	"github.com/s19013/go-sample/testutil"
+	"github.com/s19013/go-sample/testutil/fixture"
+)
+
+// 鍵ファイルの埋め込み確認
+// JWTの署名に使う「公開鍵」と「秘密鍵」のファイルが、プログラムに正しく埋め込まれているかを確認
+func TestEmbed(t *testing.T) {
+	want := []byte("-----BEGIN PUBLIC KEY-----")
+	if !bytes.Contains(rawPubKey, want) {
+		t.Errorf("want %s, but got %s", want, rawPubKey)
+	}
+	want = []byte("-----BEGIN PRIVATE KEY-----")
+	if !bytes.Contains(rawPrivKey, want) {
+		t.Errorf("want %s, but got %s", want, rawPrivKey)
+	}
+}
+
+// 実際のRedisを使った総合テスト
+// Redisという実際のデータベースを使って、JWT発行 → 検証 → ユーザーID取得まで一通り動くか確認
+func TestJWTer(t *testing.T) {
+	store := &store.KVS{Cli: testutil.OpenRedisForTest(t)}
+
+	// ユーザーを用意
+	wantID := entity.UserID(20)
+	u := entity.User{
+		ID:       wantID,
+		Name:     "budougumi",
+		Password: "test",
+		Role:     "admin",
+		Created:  time.Time{},
+		Modified: time.Time{},
+	}
+
+	// 初期化
+	sut, err := NewJWTer(store, clock.RealClocker{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// トークン作成
+	signed, err := sut.GenerateToken(context.Background(), u)
+	if err != nil {
+		t.Fatalf("failed to generate jwt: %s", err)
+	}
+	// token Authorization: Bearer ... ヘッダに入れたHTTPリクエストを作る
+	req := httptest.NewRequest(
+		http.MethodGet,
+		`https://github.com/budougumi0617`,
+		nil)
+	req.Header.Set(`Authorization`, fmt.Sprintf(`Bearer %s`, signed))
+	t.Logf("generated\n%s\n", signed)
+
+	// HTTPハンドラーが受け取ったリクエストを想定
+	// FillContext でJWTからユーザー情報を取り出し、context に詰める
+	req, err = sut.FillContext(req)
+	if err != nil {
+		t.Fatalf("failed to initialize request: %v", err)
+	}
+
+	// IsAdmin や GetUserID で期待通りの情報が入っているか確認
+	if !IsAdmin(req.Context()) {
+		t.Error("IsAdmin() should be true")
+	}
+	got, ok := GetUserID(req.Context())
+	if !ok {
+		t.Fatal("GetUserID() should be true")
+	}
+	if got != wantID {
+		t.Errorf("want %d, but got %d", wantID, got)
+	}
+}
+
+// 初期化テスト
+// 公開鍵と秘密鍵がちゃんとセットされているかを確認
+func TestNewJWTer(t *testing.T) {
+	got, err := NewJWTer(nil, nil)
+	if err != nil {
+		t.Fatalf("failed to initialze: %v", err)
+	}
+	if got.PublicKey == nil {
+		t.Error("invalid public key")
+	}
+	if got.PrivateKey == nil {
+		t.Error("invalid private key")
+	}
+}
+
+// JWTを発行したとき、正しいユーザーIDがRedisへ保存されるかを確認
+// モック使用
+func TestJWTer_GenJWT(t *testing.T) {
+	ctx := context.Background()
+	wantID := entity.UserID(20)
+	u := fixture.User(&entity.User{ID: wantID})
+	moq := &StoreMock{}
+
+	moq.SaveFunc = func(ctx context.Context, key string, userID entity.UserID) error {
+		if userID != wantID {
+			t.Errorf("want %d, but got %d", wantID, userID)
+		}
+		return nil
+	}
+
+	sut, err := NewJWTer(moq, clock.RealClocker{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// GenerateToken の中でストア保存が呼ばれたとき、保存された userID が期待通りかを確認しています。
+	got, err := sut.GenerateToken(ctx, *u)
+	if err != nil {
+		t.Fatalf("not want err: %v", err)
+	}
+	if len(got) == 0 {
+		t.Errorf("token is empty")
+	}
+}
+
+func TestJWTer_GetJWT(t *testing.T) {
+	t.Parallel()
+
+	// 時間固定
+	c := clock.FixedClocker{}
+
+	// JWTを手作業で組み立てる
+	want, err := jwt.NewBuilder().
+		JwtID(uuid.New().String()).
+		Issuer(`github.com/s19013/go-sample`).
+		Subject("access_token").
+		IssuedAt(c.Now()).
+		Expiration(c.Now().Add(30*time.Minute)).
+		Claim(RoleKey, "test").
+		Claim(UserNameKey, "test_user").
+		Build()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pkey, err := jwk.ParseKey(rawPrivKey, jwk.WithPEM(true))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 秘密鍵で署名する
+	signed, err := jwt.Sign(want, jwt.WithKey(jwa.RS256, pkey))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	userID := entity.UserID(20)
+
+	ctx := context.Background()
+	moq := &StoreMock{}
+	moq.LoadFunc = func(ctx context.Context, key string) (entity.UserID, error) {
+		return userID, nil
+	}
+	sut, err := NewJWTer(moq, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// HTTPリクエストのAuthorizationヘッダに入れる
+	req := httptest.NewRequest(
+		http.MethodGet,
+		`https://github.com/budougumi0617`,
+		nil,
+	)
+	req.Header.Set(`Authorization`, fmt.Sprintf(`Bearer %s`, signed))
+	got, err := sut.GetToken(ctx, req)
+	if err != nil {
+		t.Fatalf("want no error, but got %v", err)
+	}
+
+	// 元のJWTオブジェクトと一致するか比較する
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("GetToken() got = %v, want %v", got, want)
+	}
+
+	// 署名付きJWTが正しく読めるか
+	// 有効期限チェックが通るか
+	// ストアからユーザーIDが引けるか
+	// 取得したJWT内容が期待通りか
+}
+
+// わざと未来の時刻を返す時計
+// 有効期限切れテストのために使う
+type FixedTomorrowClocker struct{}
+
+func (c FixedTomorrowClocker) Now() time.Time {
+	return clock.FixedClocker{}.Now().Add(24 * time.Hour)
+}
+
+func TestJWTer_GetJWT_NG(t *testing.T) {
+	t.Parallel()
+
+	c := clock.FixedClocker{}
+	tok, err := jwt.NewBuilder().
+		JwtID(uuid.New().String()).
+		Issuer(`github.com/s19013/go-sample`).
+		Subject("access_token").
+		IssuedAt(c.Now()).
+		Expiration(c.Now().Add(30*time.Minute)).
+		Claim(RoleKey, "test").
+		Claim(UserNameKey, "test_user").
+		Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pkey, err := jwk.ParseKey(rawPrivKey, jwk.WithPEM(true))
+	if err != nil {
+		t.Fatal(err)
+	}
+	signed, err := jwt.Sign(tok, jwt.WithKey(jwa.RS256, pkey))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type moq struct {
+		userID entity.UserID
+		err    error
+	}
+	tests := map[string]struct {
+		c   clock.Clocker
+		moq moq
+	}{
+		"expire": {
+			// トークンのexpire時間より未来の時間を返す。
+			// つまりトークンぎれ
+			c: FixedTomorrowClocker{},
+		},
+		"notFoundInStore": {
+			// トークンに対応するユーザー情報が保存されていない
+			c: clock.FixedClocker{},
+			moq: moq{
+				err: store.ErrNotFound,
+			},
+		},
+	}
+	for n, tt := range tests {
+		tt := tt
+		t.Run(n, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := context.Background()
+			moq := &StoreMock{}
+			moq.LoadFunc = func(ctx context.Context, key string) (entity.UserID, error) {
+				return tt.moq.userID, tt.moq.err
+			}
+			sut, err := NewJWTer(moq, tt.c)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			req := httptest.NewRequest(
+				http.MethodGet,
+				`https://github.com/budougumi0617`,
+				nil,
+			)
+			req.Header.Set(`Authorization`, fmt.Sprintf(`Bearer %s`, signed))
+			got, err := sut.GetToken(ctx, req)
+			if err == nil {
+				t.Errorf("want error, but got nil")
+			}
+			if got != nil {
+				t.Errorf("want nil, but got %v", got)
+			}
+		})
+	}
+}
