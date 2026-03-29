@@ -77,7 +77,6 @@ func parse(rawKey []byte) (jwk.Key, error) {
 }
 
 func (j *JWTer) GenerateToken(ctx context.Context, u entity.User) ([]byte, error) {
-
 	// JwtID() → トークンID（uuid）
 	// Issuer() → 発行者
 	// Subject() → 種類
