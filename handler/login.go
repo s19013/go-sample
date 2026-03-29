@@ -12,6 +12,11 @@ type Login struct {
 	Validator *validator.Validate
 }
 
+// * リクエストを受け取る
+// * JSONをパース
+// * 入力チェック
+// * サービス層でログイン処理
+// * 成功したらJWT（トークン）を返す
 func (l *Login) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -20,6 +25,7 @@ func (l *Login) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password" validate:"required"`
 	}
 
+	// パース
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		RespondJSON(ctx, w, &ErrResponse{
 			Message: err.Error(),
@@ -27,6 +33,7 @@ func (l *Login) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// バリデーション
 	err := l.Validator.Struct(body)
 	if err != nil {
 		RespondJSON(ctx, w, &ErrResponse{
@@ -35,6 +42,7 @@ func (l *Login) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// ログイン処理
 	jwt, err := l.Service.Login(ctx, body.UserName, body.Password)
 	if err != nil {
 		RespondJSON(ctx, w, &ErrResponse{
@@ -43,6 +51,7 @@ func (l *Login) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// レスポンス
 	rsp := struct {
 		AccessToken string `json:"access_token"`
 	}{
