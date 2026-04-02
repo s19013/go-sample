@@ -42,3 +42,11 @@ run = 'go run .'
 [tasks.generate]
 description = "モックを生成"
 run = 'go generate ./...'
+
+[tasks.dry-migrate]
+description = "Try migration"
+run = "mysqldef -u todo -p todo -h 127.0.0.1 -P 33306 todo --dry-run < ./_tools/mysql/schema.sql"
+
+[tasks.migrate]
+description = "Execute migration"
+run = "mysqldef -u todo -p todo -h 127.0.0.1 -P 33306 todo < ./_tools/mysql/schema.sql"
